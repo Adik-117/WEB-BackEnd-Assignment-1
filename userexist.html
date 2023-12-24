@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Exist Page</title>
+    <!-- Bootstrap CSS link (you may need to adjust the link based on your project structure) -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="display-4">User Exist Page</h1>
+        <p class="lead">The user already exists in the system.</p>
+        <p>If you have an account, you can <a href="/login">login</a>.</p>
+        <p>If you don't have an account, you can <a href="/signup">sign up</a> with a different username.</p>
+        <div class="alert alert-warning" role="alert">
+            Please choose a different username. The selected username is already in use.
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js scripts (you may need to adjust the links based on your project structure) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>

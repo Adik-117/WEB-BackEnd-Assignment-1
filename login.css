@@ -1,0 +1,29 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.container {
+    margin-top: 100px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+form {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+label {
+    margin-top: 10px;
+}
+
+button {
+    margin-top: 20px;
+}
+
+p {
+    margin-top: 20px;
+}
