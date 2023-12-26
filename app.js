@@ -3,6 +3,7 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const port = 3000;
@@ -23,20 +24,19 @@ app.use(session({ secret: 'your_secret_key', resave: false, saveUninitialized: f
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.use(new LocalStrategy((username, password, done) => {
-  pool.query('SELECT * FROM users WHERE username = $1', [username], (err, result) => {
-    if (err) {
-      return done(err);
-    }
-
+passport.use(new LocalStrategy(async (username, password, done) => {
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
 
-    if (!user || user.password !== password) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return done(null, false, { message: 'Incorrect username or password' });
     }
 
     return done(null, user);
-  });
+  } catch (err) {
+    return done(err);
+  }
 }));
 
 passport.serializeUser((user, done) => {
@@ -84,21 +84,20 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-    req.logout(err => {
-      if (err) {
-        console.error(err);
-        return res.redirect('/');
-      }
-      res.redirect('/');
-    });
+  req.logout(err => {
+    if (err) {
+      console.error(err);
+      return res.redirect('/');
+    }
+    res.redirect('/');
   });
-  
+});
 
 app.get('/signup', (req, res) => {
   res.sendFile(__dirname + '/signup.html');
 });
 
-app.post('/signup', (req, res) => {
+app.post('/signup', async (req, res) => {
   const { username, password, confirmPassword, role } = req.body;
 
   // Basic password validation
@@ -106,27 +105,25 @@ app.post('/signup', (req, res) => {
     return res.send('Passwords do not match. Please try again.');
   }
 
-  // Check if the username already exists in the database 
-  pool.query('SELECT * FROM users WHERE username = $1', [username], (err, result) => {
-    if (err) {
-      console.error(err); // Log the error
-      return res.send('Error checking username availability. Please try again.');
-    }
+  try {
+    // Check if the username already exists in the database
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
 
     if (result.rows.length > 0) {
       return res.redirect('/userexist'); // Redirect to userexist.html if the username exists
     }
 
-    // Save user to the database with role information 
-    pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3)', [username, password, role], (err) => {
-      if (err) {
-        console.error(err); // Log the error
-        return res.send('Error creating user. Please try again.');
-      }
+    // Hash the password before saving it to the database
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      res.redirect('/login');
-    });
-  });
+    // Save user to the database with hashed password and role information
+    await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3)', [username, hashedPassword, role]);
+
+    res.redirect('/login');
+  } catch (err) {
+    console.error(err); // Log the error
+    res.send('Error creating user. Please try again.');
+  }
 });
 
 // Middleware to check if the user is authenticated
