@@ -4,6 +4,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
+const path = require('path'); // Import path module
 
 const app = express();
 const port = 3000;
@@ -15,6 +16,10 @@ const pool = new Pool({
   password: 'Infinity2021.',
   port: 5432,
 });
+
+// Set EJS as the view engine
+app.set('views', path.join(__dirname, 'views')); // Set the 'views' directory
+app.set('view engine', 'ejs'); // Set EJS as the view engine
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -95,6 +100,34 @@ app.get('/logout', (req, res) => {
 
 app.get('/signup', (req, res) => {
   res.sendFile(__dirname + '/signup.html');
+});
+
+app.get('/delete-users', isAuthenticated, async (req, res) => {
+  try {
+    // Query the database to get a list of user names
+    const queryResult = await pool.query('SELECT username FROM users');
+
+    // Render the delete_user.html page with dynamically generated dropdown options
+    res.render('delete_user.ejs', { users: queryResult.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/delete-users', isAuthenticated, async (req, res) => {
+  try {
+    const selectedUser = req.body.users;
+
+    // Add your logic here to delete the user from the database
+    await pool.query('DELETE FROM users WHERE username = $1', [selectedUser]);
+
+    // Redirect back to the admin_dashboard after deletion
+    res.redirect('/dashboard');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 app.post('/signup', async (req, res) => {
