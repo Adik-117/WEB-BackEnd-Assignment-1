@@ -1,0 +1,25 @@
+<!-- borrow.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Borrow Book</title>
+</head>
+<body>
+  <h1>Borrow Book</h1>
+
+  <form action="/books/borrow" method="post">
+    <label for="bookTitle">Select Book to Borrow:</label>
+    <select id="bookTitle" name="bookTitle" required>
+      <% books.forEach(book => { %>
+        <option value="<%= book.title %>"><%= book.title %></option>
+      <% }); %>
+    </select>
+    <br>
+    <button type="submit">Borrow Book</button>
+  </form>
+
+</body>
+</html>

@@ -1,3 +1,4 @@
+import('node-fetch').then((module) => {
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
@@ -5,9 +6,10 @@ const LocalStrategy = require('passport-local').Strategy;
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const path = require('path'); // Import path module
-
 const app = express();
 const port = 3000;
+const fetch = module.default;
+
 
 const pool = new Pool({
   user: 'postgres',
@@ -16,6 +18,8 @@ const pool = new Pool({
   password: 'Infinity2021.',
   port: 5432,
 });
+
+
 
 // Set EJS as the view engine
 app.set('views', path.join(__dirname, 'views')); // Set the 'views' directory
@@ -60,6 +64,21 @@ passport.deserializeUser((id, done) => {
 });
 
 // Routes
+app.get('/admin_dashboard', isAuthenticated, hasRole('admin_dashboard'), (req, res) => {
+  res.sendFile(__dirname + '/admin_dashboard.html');
+});
+
+app.get('/moderator_dashboard', isAuthenticated, hasRole('moderator_dashboard'), (req, res) => {
+  res.sendFile(__dirname + '/moderator_dashboard.html');
+});
+
+app.get('/user_dashboard', isAuthenticated, hasRole('user_dashboard'), (req, res) => {
+  res.sendFile(__dirname + '/user_dashboard.html');
+});
+
+
+app.use(express.static(path.join(__dirname, 'views')));
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/homepage.html');
 });
@@ -159,6 +178,137 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+
+
+
+
+//Display books
+app.get('/books', isAuthenticated, async (req, res) => {
+  try {
+    const { rows: books } = await pool.query('SELECT * FROM books');
+    res.render('books', { books, userRole: req.user.role });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Render form to add a new book
+app.get('/books/add', isAuthenticated, async (req, res) => {
+  res.render('add_book', { userRole: req.user.role });
+});
+
+// Handle form submission to add a new book
+app.post('/books/add', isAuthenticated, async (req, res) => {
+  const { title, author, genre, status } = req.body;
+
+  try {
+    await pool.query('INSERT INTO books(title, author, genre, status) VALUES($1, $2, $3, $4)', [title, author, genre, status]);
+    res.redirect('/books');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+// Handle edit book
+app.post('/books/edit', isAuthenticated, async (req, res) => {
+  const { editOldTitle, editNewTitle, editNewAuthor, editNewGenre } = req.body;
+
+  try {
+    // Update the book with the old title to the new details
+    await pool.query('UPDATE books SET title=$1, author=$2, genre=$3 WHERE title=$4',
+      [editNewTitle, editNewAuthor, editNewGenre, editOldTitle]);
+    
+    res.redirect('/books');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+// Handle delete book
+app.post('/books/delete', isAuthenticated, async (req, res) => {
+  const title = req.body.deleteTitle;
+
+  try {
+    await pool.query('DELETE FROM books WHERE title = $1', [title]);
+    res.redirect('/books');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+// Add this route to render the borrow.ejs file
+app.get('/books/borrow', isAuthenticated, async (req, res) => {
+  try {
+    const { rows: books } = await pool.query('SELECT title FROM books WHERE status = $1', ['Available']);
+    res.render('borrow', { books, userRole: req.user.role });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Add this route to handle the form submission and update the book status
+app.post('/books/borrow', isAuthenticated, async (req, res) => {
+  const { bookTitle } = req.body;
+  const borrowerUsername = req.user.username;
+
+  try {
+    // Update the status of the selected book to 'Borrowed by [username]'
+    await pool.query('UPDATE books SET status=$1, borrower=$2 WHERE title=$3 AND status=$4',
+      [`Borrowed by ${borrowerUsername}`, borrowerUsername, bookTitle, 'Available']);
+
+    res.redirect('/books');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+// Add a new route to render the borrow.ejs file and handle returning books
+app.get('/books/borrow', isAuthenticated, async (req, res) => {
+  try {
+    // Query books that are available for borrowing
+    const { rows: booksAvailable } = await pool.query('SELECT title FROM books WHERE status = $1', ['Available']);
+
+    // Query books that are currently borrowed
+    const { rows: booksBorrowed } = await pool.query('SELECT title FROM books WHERE status LIKE $1', ['Borrowed%']);
+
+    res.render('borrow', { booksAvailable, booksBorrowed, userRole: req.user.role });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Add a new route to handle returning a borrowed book
+app.post('/books/return', isAuthenticated, async (req, res) => {
+  const { returnBookTitle } = req.body;
+  const borrowerUsername = req.user.username;
+
+  try {
+    // Update the status of the selected book to 'Available'
+    await pool.query('UPDATE books SET status=$1, borrower=$2 WHERE title=$3 AND status LIKE $4',
+      ['Available', null, returnBookTitle, 'Borrowed%' + borrowerUsername]);
+
+    res.redirect('/books/borrow');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
 // Middleware to check if the user is authenticated
 function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
@@ -168,6 +318,37 @@ function isAuthenticated(req, res, next) {
   res.redirect('/login');
 }
 
+
+// Middleware to check if the user has the required role
+function hasRole(role) {
+  return (req, res, next) => {
+    const userRole = req.user.role;
+
+    if (req.isAuthenticated()) {
+      // Admin has access to all dashboards
+      if (userRole === 'admin') {
+        return next();
+      }
+
+      // Moderator has access to user_dashboard
+      if (userRole === 'moderator' && role === 'user_dashboard') {
+        return next();
+      }
+
+      // User has access only to their dashboard
+      if (userRole === 'user' && role === 'user_dashboard') {
+        return next();
+      }
+    }
+
+    res.status(403).send('Access denied');
+  };
+}
+
+
+
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
+});
 });
