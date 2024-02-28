@@ -1,0 +1,78 @@
+<!-- profile.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile</title>
+  <!-- Bootstrap CSS link -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      background-image: url('<%= user.background %>'); /* Set background image */
+      background-size: cover;
+      color: #000000; /* Set text color to white for better visibility */
+    }
+  </style>
+</head>
+<body class="container mt-5">
+
+  <h1 class="text-center mb-4">My Profile</h1>
+
+  <!-- Display user's information -->
+  <div class="card">
+    <div class="card-body">
+      <h2 class="card-title">My Username: <%= user.username %></h2>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="btn-container">
+        <a class="btn btn-primary" href="/change-username">Change Username and Password</a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Display Message of the Day -->
+  <div class="card mt-4">
+    <div class="card-body">
+      <h2 class="card-title">Message of the Day</h2>
+      <% if (user.messageOfTheDay) { %>
+        <p><%= user.messageOfTheDay %></p>
+        <form action="/delete-message" method="post">
+          <button type="submit" class="btn btn-danger">Delete Message</button>
+        </form>
+      <% } else { %>
+        <form action="/add-message" method="post">
+          <div class="form-group">
+            <label for="message">Write your message:</label>
+            <textarea class="form-control" id="message" name="message" rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Add Message</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+
+  <!-- Display borrowed books -->
+  <h2 class="mt-4">My Purchased Devices</h2>
+  <ul class="list-group">
+    <% borrowedBooks.forEach(book => { %>
+      <li class="list-group-item"><strong><%= book.device %></strong> by <%= book.make %> (Type: <%= book.type %>)</li>
+    <% }); %>
+  </ul>
+
+  <div class="btn-container">
+    <a class="btn btn-primary" href="/dashboard">Go back to page</a>
+</div>
+
+  <!-- Bootstrap JS and Popper.js scripts (required for some Bootstrap features) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

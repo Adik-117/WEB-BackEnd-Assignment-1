@@ -1,30 +1,31 @@
-<!-- borrow.ejs -->
-
+<!-- changeUsername.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borrow Book</title>
+  <title>Change Username and Password</title>
   <!-- Bootstrap CSS link -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body class="container mt-5">
 
-  <h1 class="text-center mb-4">Purchase a device from list</h1>
+  <h1 class="text-center mb-4">Change Username and Password</h1>
 
   <div class="row justify-content-center">
     <div class="col-md-6">
-      <form action="/books/borrow" method="post">
+      <form action="/change-username" method="post">
         <div class="form-group">
-          <label for="bookTitle">Select Device to buy:</label>
-          <select class="form-control" id="bookTitle" name="bookTitle" required>
-            <% books.forEach(book => { %>
-              <option value="<%= book.device %>"><%= book.device %> </option>
-            <% }); %>
-          </select>
+          <label for="newUsername">New Username:</label>
+          <input type="text" class="form-control" id="newUsername" name="newUsername" required>
         </div>
-        <button type="submit" class="btn btn-primary">Buy a device</button>
+
+        <div class="form-group">
+          <label for="newPassword">New Password:</label>
+          <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Change Username and Password</button>
       </form>
     </div>
   </div>

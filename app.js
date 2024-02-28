@@ -185,7 +185,7 @@ app.post('/signup', async (req, res) => {
 //Display books
 app.get('/books', isAuthenticated, async (req, res) => {
   try {
-    const { rows: books } = await pool.query('SELECT * FROM books');
+    const { rows: books } = await pool.query('SELECT * FROM market');
     res.render('books', { books, userRole: req.user.role });
   } catch (error) {
     console.error(error);
@@ -200,10 +200,10 @@ app.get('/books/add', isAuthenticated, async (req, res) => {
 
 // Handle form submission to add a new book
 app.post('/books/add', isAuthenticated, async (req, res) => {
-  const { title, author, genre, status } = req.body;
+  const { title, author, genre, price, status } = req.body;
 
   try {
-    await pool.query('INSERT INTO books(title, author, genre, status) VALUES($1, $2, $3, $4)', [title, author, genre, status]);
+    await pool.query('INSERT INTO market(device, make, type, price, status) VALUES($1, $2, $3, $4, $5)', [title, author, genre, price, status]);
     res.redirect('/books');
   } catch (error) {
     console.error(error);
@@ -215,12 +215,12 @@ app.post('/books/add', isAuthenticated, async (req, res) => {
 
 // Handle edit book
 app.post('/books/edit', isAuthenticated, async (req, res) => {
-  const { editOldTitle, editNewTitle, editNewAuthor, editNewGenre } = req.body;
+  const { editOldTitle, editNewTitle, editNewAuthor, editNewGenre, editNewPrice } = req.body;
 
   try {
     // Update the book with the old title to the new details
-    await pool.query('UPDATE books SET title=$1, author=$2, genre=$3 WHERE title=$4',
-      [editNewTitle, editNewAuthor, editNewGenre, editOldTitle]);
+    await pool.query('UPDATE market SET device=$1, make=$2, type=$3, price=$4 WHERE device=$5',
+      [editNewTitle, editNewAuthor, editNewGenre, editNewPrice, editOldTitle]);
     
     res.redirect('/books');
   } catch (error) {
@@ -236,7 +236,7 @@ app.post('/books/delete', isAuthenticated, async (req, res) => {
   const title = req.body.deleteTitle;
 
   try {
-    await pool.query('DELETE FROM books WHERE title = $1', [title]);
+    await pool.query('DELETE FROM market WHERE device = $1', [title]);
     res.redirect('/books');
   } catch (error) {
     console.error(error);
@@ -248,7 +248,7 @@ app.post('/books/delete', isAuthenticated, async (req, res) => {
 // Add this route to render the borrow.ejs file
 app.get('/books/borrow', isAuthenticated, async (req, res) => {
   try {
-    const { rows: books } = await pool.query('SELECT title FROM books WHERE status = $1', ['Available']);
+    const { rows: books } = await pool.query('SELECT device FROM market WHERE status = $1', ['Available']);
     res.render('borrow', { books, userRole: req.user.role });
   } catch (error) {
     console.error(error);
@@ -263,8 +263,8 @@ app.post('/books/borrow', isAuthenticated, async (req, res) => {
 
   try {
     // Update the status of the selected book to 'Borrowed by [username]'
-    await pool.query('UPDATE books SET status=$1, borrower=$2 WHERE title=$3 AND status=$4',
-      [`Borrowed by ${borrowerUsername}`, borrowerUsername, bookTitle, 'Available']);
+    await pool.query('UPDATE market SET status=$1, owner=$2 WHERE device=$3 AND status=$4',
+      [`Purchased by ${borrowerUsername}`, borrowerUsername, bookTitle, 'Available']);
 
     res.redirect('/books');
   } catch (error) {
@@ -278,10 +278,10 @@ app.post('/books/borrow', isAuthenticated, async (req, res) => {
 app.get('/books/borrow', isAuthenticated, async (req, res) => {
   try {
     // Query books that are available for borrowing
-    const { rows: booksAvailable } = await pool.query('SELECT title FROM books WHERE status = $1', ['Available']);
+    const { rows: booksAvailable } = await pool.query('SELECT device FROM market WHERE status = $1', ['Available']);
 
     // Query books that are currently borrowed
-    const { rows: booksBorrowed } = await pool.query('SELECT title FROM books WHERE status LIKE $1', ['Borrowed%']);
+    const { rows: booksBorrowed } = await pool.query('SELECT device FROM market WHERE status LIKE $1', ['Purchased%']);
 
     res.render('borrow', { booksAvailable, booksBorrowed, userRole: req.user.role });
   } catch (error) {
@@ -305,6 +305,124 @@ app.post('/books/return', isAuthenticated, async (req, res) => {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
+});
+
+// Add a route to render the profile page
+app.get('/profile', isAuthenticated, async (req, res) => {
+  try {
+    // Retrieve the user's information
+    const userId = req.user.id;
+    const { rows: [user] } = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+
+    // Retrieve the list of borrowed books
+    const { rows: borrowedBooks } = await pool.query('SELECT * FROM market WHERE owner = $1', [req.user.username]);
+
+    res.render('profile', { user, borrowedBooks });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Add a route to handle adding a message of the day
+app.post('/add-message', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const message = req.body.message;
+
+    // Update the user's message of the day in the database
+    await pool.query('UPDATE users SET "messageOfTheDay"=$1 WHERE id=$2', [message, userId]);
+
+    // Redirect back to the profile page
+    res.redirect('/profile');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Add a route to handle deleting the message of the day
+app.post('/delete-message', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Update the user's message of the day in the database to null
+    await pool.query('UPDATE users SET "messageOfTheDay"=NULL WHERE id=$1', [userId]);
+
+    // Redirect back to the profile page
+    res.redirect('/profile');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+
+// Add a new route to render the changeUsername.ejs file
+app.get('/change-username', isAuthenticated, (req, res) => {
+  res.render('changeUsername', { userRole: req.user.role });
+});
+
+// Add a new route to handle changing the username and password
+app.post('/change-username', isAuthenticated, async (req, res) => {
+  const newUsername = req.body.newUsername;
+  const newPassword = req.body.newPassword;
+  const userId = req.user.id;
+
+  try {
+    // Update the username and password in the database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET username=$1, password=$2 WHERE id=$3', [newUsername, hashedPassword, userId]);
+
+    // Logout the user after changing the username and password
+    req.logout(() => {
+      // Redirect to the login page
+      res.redirect('/login');
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+app.get('/change-password', isAuthenticated, (req, res) => {
+  res.render('changeUsername.ejs');
+});
+
+// Route to handle changing the password
+app.post('/change-password', isAuthenticated, async (req, res) => {
+  const newPassword = req.body.newPassword;
+
+  try {
+    // Hash the new password before updating it in the database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password in the database
+    const userId = req.user.id;
+    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, userId]);
+
+    // Redirect back to the profile page or wherever you'd like
+    res.redirect('/profile');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+
+app.get('/script.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'script.js'));
+});
+
+
+app.get('/locationData.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'locationData.json'));
 });
 
 
