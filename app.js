@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const path = require('path'); // Import path module
 const app = express();
 const port = 3000;
+const winston = require('winston');
 const fetch = module.default;
 
 
@@ -421,6 +422,11 @@ app.get('/script.js', (req, res) => {
 });
 
 
+app.get('/youtube_script.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'youtube_script.js'));
+});
+
+
 app.get('/locationData.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'locationData.json'));
 });
@@ -463,6 +469,42 @@ function hasRole(role) {
   };
 }
 
+// Configure Winston logger
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }), // to log the error stack
+    winston.format.splat(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
+
+// In development, log to console as well
+if (process.env.NODE_ENV === 'development') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple(),
+  }));
+}
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  // Log error using Winston
+  logger.error('Error: %s', err.message, { url: req.originalUrl, method: req.method, ip: req.ip, stack: err.stack });
+
+  // Customize error response based on environment
+  if (process.env.NODE_ENV === 'development') {
+    // In development, send stack trace to provide more error details
+    res.status(500).send({ error: err.message, stack: err.stack });
+  } else {
+    // In production, send generic message
+    res.status(500).send('Something went wrong!');
+  }
+});
 
 
 

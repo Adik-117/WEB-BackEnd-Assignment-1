@@ -21,18 +21,37 @@
       <% }); %>
     </ul>
 
-    <h2>Add a New Book</h2>
+
+    <div class="container mt-5">
+      <p><strong>Search videos about our products</strong></p>
+      <div class="row">
+          <div class="col-md-8">
+              <input type="text" id="searchInput" class="form-control" placeholder="Enter search query">
+          </div>
+          <div class="col-md-4">
+              <button onclick="searchVideos()" class="btn btn-primary">Search</button>
+              <button onclick="clearResults()" class="btn btn-danger">Clear Results</button>
+          </div>
+      </div>
+
+      <div id="results" class="mt-4"></div>
+  </div>
+
+
+
+
+    <h2>Add a New Device for sale</h2>
 <form action="/books/add" method="post">
   <div class="form-group">
-    <label for="title">Title:</label>
+    <label for="title">Device Name:</label>
     <input type="text" class="form-control" id="title" name="title" required>
   </div>
   <div class="form-group">
-    <label for="author">Author:</label>
+    <label for="author">Make:</label>
     <input type="text" class="form-control" id="author" name="author" required>
   </div>
   <div class="form-group">
-    <label for="genre">Genre:</label>
+    <label for="genre">Type:</label>
     <input type="text" class="form-control" id="genre" name="genre" required>
   </div>
   <div class="form-group">
@@ -43,44 +62,44 @@
     <label for="status">Status:</label>
     <input type="text" class="form-control" id="status" name="status" required>
   </div>
-  <button type="submit" class="btn btn-primary">Add Book</button>
+  <button type="submit" class="btn btn-primary">Add Device</button>
 </form>
 
     <!-- Edit Book Form -->
-<h2>Edit Book</h2>
+<h2>Edit Device</h2>
 <form action="/books/edit" method="post">
   <div class="form-group">
-    <label for="editOldTitle">Old Book Title:</label>
+    <label for="editOldTitle">Old Device Name:</label>
     <input type="text" class="form-control" id="editOldTitle" name="editOldTitle" required>
   </div>
   <div class="form-group">
-    <label for="editNewTitle">New Book Title:</label>
+    <label for="editNewTitle">New Device Name:</label>
     <input type="text" class="form-control" id="editNewTitle" name="editNewTitle" required>
   </div>
   <div class="form-group">
-    <label for="editNewAuthor">New Author:</label>
+    <label for="editNewAuthor">New Make:</label>
     <input type="text" class="form-control" id="editNewAuthor" name="editNewAuthor" required>
   </div>
   <div class="form-group">
-    <label for="editNewGenre">New Genre:</label>
+    <label for="editNewGenre">New Type:</label>
     <input type="text" class="form-control" id="editNewGenre" name="editNewGenre" required>
   </div>
   <div class="form-group">
     <label for="editNewPrice">New Price:</label>
     <input type="text" class="form-control" id="editNewPrice" name="editNewPrice" required>
   </div>
-  <button type="submit" class="btn btn-warning">Edit Book</button>
+  <button type="submit" class="btn btn-warning">Edit Device</button>
 </form>
 
 
     <!-- Delete Book Form -->
-    <h2>Delete Book</h2>
+    <h2>Delete Device</h2>
     <form action="/books/delete" method="post">
       <div class="form-group">
-        <label for="deleteTitle">Book Title:</label>
+        <label for="deleteTitle">Device Name:</label>
         <input type="text" class="form-control" id="deleteTitle" name="deleteTitle" required>
       </div>
-      <button type="submit" class="btn btn-danger">Delete Book</button>
+      <button type="submit" class="btn btn-danger">Delete Device</button>
     </form>
 
     <!-- Go back link -->
@@ -88,6 +107,7 @@
   </div>
 
   <!-- Bootstrap JS and Popper.js Scripts -->
+  <script src="/youtube_script.js"></script>
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
